@@ -1,15 +1,12 @@
-from encodings import utf_8
 from multiprocessing import Pool
-from unittest import result
 from urllib.parse import urlparse, unquote
 import requests
 import re
 
 import xml.etree.ElementTree as ET
 import zlib
-import logging
 import io
-
+import os
 
 final_results: list[tuple[str, list[str]]] = []
 
@@ -45,12 +42,16 @@ def process_file(url):
                     results.append(str.lower(query.split('=')[1]))
     return (url, results)
 
+
+sitemap_root = "https://www.urbandictionary.com/sitemap-https.xml.gz"
+
+
 def main():
-    with Pool(processes=8) as pool:
+    with Pool(processes=os.cpu_count() - 1) as pool:
         parser = ET.XMLPullParser(["start", "end", "start-ns"])
         tagName = "loc"
         filterTag = tagName
-        for c in read_gzip_stream("https://www.urbandictionary.com/sitemap-https.xml.gz", 1024):
+        for c in read_gzip_stream(sitemap_root, 4*1024):
             print(len(c))
             parser.feed(c.decode('utf-8'))
             for event, elem in parser.read_events():
